@@ -1,0 +1,248 @@
+详解JavaScript DOM中的Node节点(1)
+
+  在DOM（文档对象模型）中，HTML文档的层次结构被表示为树形结构，HTML文档的树形表示主要包含表示元素或标记的节点和标识文本串的节点构成。在JavaScript DOM中，Node常常被翻译成节点，下面我们通过实例，来了解一下Node的属性及方法。
+
+  Node的属性介绍：
+  ==========================
+
+        nodeType：显示节点的类型  
+        nodeName：显示节点的名称  
+        nodeValue：显示节点的值  
+        attributes：获取一个属性节点  
+        firstChild：表示某一节点的第一个节点  
+        lastChild：表示某一节点的最后一个子节点  
+        childNodes：表示所在节点的所有子节点  
+        parentNode：表示所在节点的父节点  
+        nextSibling：紧挨着当前节点的下一个节点  
+        previousSibling：紧挨着当前节点的上一个节点 
+
+  Node有各种各样的节点，我们先花一些时间认识他们，同时一并了解nodeType，nodeName和nodeValue属性：
+
+  元素节点（Element）
+  ==========================
+
+        ◆nodeType：ELEMENT_NODE
+        ◆nodeType值：1
+        ◆nodeName：元素标记名
+        ◆nodeValue：null
+
+        ----------------------------------------------------------------------------
+        <body> 
+          <div id = "t" ><span></span></div> 
+        </body> 
+
+        <script> 
+          var d = document.getElementById("t");  
+          document.write(d.nodeType);  
+          document.write(d.nodeName);  
+          document.write(d.nodeValue);  
+          //显示 1 DIV null  
+        </script> 
+        ----------------------------------------------------------------------------
+
+  属性节点
+  ==========================
+  
+        ◆nodeType：ATTRIBUTE_NODE
+        ◆nodeType值：2
+        ◆nodeName：属性名
+        ◆nodeValue：属性值
+        
+        ----------------------------------------------------------------------------
+        <body> 
+          <div id = "t" name="aaa"><span></span></div> 
+        </body> 
+        <script> 
+          var d = document.getElementById("t").getAttributeNode("name");  
+          document.write(d.nodeType);  
+          document.write(d.nodeName);  
+          document.write(d.nodeValue);  
+          //显示 2 name aaa  
+        </script> 
+        ----------------------------------------------------------------------------
+
+  文本节点
+  ==========================
+
+        ◆nodeType：TEXT_NODE
+        ◆nodeType值：3
+        ◆nodeName：#text
+        ◆nodeValue：文本内容
+        
+        ----------------------------------------------------------------------------
+        <body> 
+          <div id = "t">bbb</div> 
+        </body> 
+        <script> 
+          var d = document.getElementById("t").firstChild;  
+          document.write(d.nodeType);  
+          document.write(d.nodeName);  
+          document.write(d.nodeValue);  
+          //显示 3 #text bbb  
+        </script> 
+        ----------------------------------------------------------------------------
+
+  CDATA文本节点（XML中传递文本的格式）
+  ==========================
+
+        ◆nodeType：CDATA_SECTION_NODE
+        ◆nodeType值：4
+        ◆nodeName：#cdata-section
+        ◆nodeValue：CDATA文本内容
+        
+        attributes属性，直接获取一个属性节点，注意这里要使用[]，保持IE和FF的兼容性。
+        
+        ----------------------------------------------------------------------------
+        <body name="ddd"> 
+          <div id = "t" name = "aaa"><span>aaa</span><span>bbb</span><span>ccc</span></div> 
+        </body> 
+        <script> 
+          var d = document.getElementById("t").attributes["name"];  
+          document.write(d.name);  
+          document.write(d.value);  
+          //显示 name aaa  
+        </script> 
+        ----------------------------------------------------------------------------
+
+  firstChild和lastChild属性，表示某一节点的第一个和最后一个子节点：
+  ==========================
+
+        ----------------------------------------------------------------------------
+        <body> 
+          <div id = "t"><span>aaa</span><span>bbb</span><span>ccc</span></div> 
+        </body> 
+        <script> 
+          var d = document.getElementById("t");  
+          document.write(d.firstChild.innerHTML);  
+          document.write(d.lastChild.innerHTML);  
+          //显示 aaa ccc  
+        </script> 
+        ----------------------------------------------------------------------------
+
+  childNodes和parentNode属性，表示所在节点的所有子节点和所在节点的父节点，这里的childNodes注意是一个数组：
+  ==========================
+
+        ----------------------------------------------------------------------------
+        <body name="ddd"> 
+          <div id = "t"><span>aaa</span><span>bbb</span><span>ccc</span></div> 
+        </body> 
+        <script> 
+          var d = document.getElementById("t");  
+          document.write(d.childNodes[1].innerHTML);  
+          document.write(d.parentNode.getAttribute("name"));  
+          //显示 bbb ddd  
+        </script> 
+        ----------------------------------------------------------------------------
+  
+  nextSibling和previousSibling属性，分别表示在parentNode的childNodes[]数组中，紧挨着当前节点的上一个和下一个节点：
+  ==========================
+
+        ----------------------------------------------------------------------------
+        <body name="ddd"> 
+          <div id = "t"><span>aaa</span><span>bbb</span><span>ccc</span></div> 
+        </body> 
+        <script> 
+          var d = document.getElementById("t").childNodes[1];  
+          document.write(d.nextSibling.innerHTML);  
+          document.write(d.previousSibling.innerHTML);  
+          //显示 ccc aaa  
+        </script> 
+        ----------------------------------------------------------------------------
+
+
+  Node的方法介绍：
+  ==========================
+
+        ◆hasChildNodes()：判定一个节点是否有子节点
+        
+        ◆removeChild()：去除一个节点
+        
+        ◆appendChild()：添加一个节点
+        
+        ◆replaceChild()：替换一个节点
+        
+        ◆insertBefore()：指定节点位置插入一个节点
+        
+        ◆cloneNode()：复制一个节点
+        
+        ◆normalize()：（不知）
+        
+        
+  hasChildNodes()方法：判定一个节点是否有子节点，有返回true，没有返回false
+  ==========================
+
+        <body name="ddd"> 
+          <div id = "t"><span>aaa</span><span>bbb</span><span>ccc</span></div> 
+        <div id = "m"></div> 
+        </body> 
+        <script> 
+          alert(document.getElementById("t").hasChildNodes());  
+          alert(document.getElementById("m").hasChildNodes());  
+          // 第一个true，第二个false  
+        </script> 
+
+  removeChild()方法：去除一个节点：
+  ==========================
+
+        <body name="ddd"> 
+          <div id = "t"><span>aaa</span><span>bbb</span><span>ccc</span></div> 
+        </body> 
+        <script> 
+          var d = document.getElementById("t").firstChild;  
+          document.getElementById("t").removeChild(d);  
+          // <span>aaa</span>被去除  
+        </script> 
+
+  appendChild()方法：添加一个节点，如果文档树中已经存在该节点，则将它删除，然后在新位置插入。
+  ==========================
+
+        <body name="ddd"> 
+          <div id = "t"><span>aaa</span><span>bbb</span><span>ccc</span></div> 
+        </body> 
+        <script> 
+          var d = document.getElementById("t").firstChild;  
+          document.getElementById("t").appendChild(d);  
+          // <span>aaa</span>成了最后一个节点  
+        </script> 
+
+  replaceChild()方法：从文档树中删除（并返回）指定的子节点，用另一个节点来替换它。
+  ==========================
+
+        <body name="ddd"> 
+          <div id = "t"><span>aaa</span><span>bbb</span><span>ccc</span></div> 
+        </body> 
+        <script> 
+          var newd = document.createElement("span");  
+          newd.innerHTML = "eee";  
+          var oldd = document.getElementById("t").lastChild;  
+          document.getElementById("t").replaceChild(newd,oldd);  
+          // 最后一项成了 eee  
+        </script> 
+  
+  insertBefore()方法：在指定节点的前面插入一个节点，如果已经存在，则删除原来的，然后在新位置插入。
+  ==========================
+
+        <body name="ddd"> 
+          <div id = "t"><span>aaa</span><span>bbb</span><span>ccc</span></div> 
+        </body> 
+        <script> 
+          var newd = document.createElement("span");  
+          newd.innerHTML = "eee";  
+          var where = document.getElementById("t").lastChild;  
+          document.getElementById("t").insertBefore(newd,where);  
+          // 在最后一项的前面多了一项 eee  
+        </script> 
+
+  cloneNode()方法：复制一个节点，该方法有一个参数，true表示同时复制所有的子节点，false表示近复制当前节点。
+  ==========================
+
+        <body name="ddd"> 
+          <div id = "t"><span>aaa</span><span>bbb</span><span>ccc</span></div><div id = "m"></div> 
+        </body> 
+        <script> 
+          var what = document.getElementById("t").cloneNode(false).innerHTML;  
+          document.getElementById("m").innerHTML = what;  
+          // 增加了一个aaabbbccc  
+        </script>         
+        
+        
