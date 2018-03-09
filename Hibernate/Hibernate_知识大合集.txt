@@ -1,0 +1,617 @@
+一．	简答题
+1．	请说出Hibernate中持久化对象的生命周期以及各种状态直接的区别，并描述相互之间是如何转换的。
+Hibernate中持久化对象的生命周期有临时态、持久态和游离态三种。
+处于临时态的对象主键值为空，并且未与session关联，数据未保存到数据库中
+处于持久态的对象与session关联起来，持久化后对象中的数据被保存到数据库中，并且主键值按照.hbm.xml文件中配置的生成方式生成相应的值
+处于游离态的对象脱离了session的管理，是持久化后的一种状态，主键值按照.hbm.xml文件中配置的生成方式生成相应的值
+当new一个新的对象时，该对象处于临时态
+当该对象被当作session的参数使用的时候，该对象处于持久态
+事务提交，session关闭后，该对象处于游离态
+2．hibernate与数据库连接的实现?并解释了一下,例如文件是通过流来实现的!hibernate与数据库连接是通过什么实现的?
+Hibernate与数据库的连接是通过JDBC实现的
+3．spring和hibernate的事务管理方式有什么不同？
+hibernate的事务管理方式仅仅就是托管给JDBC（如果用JTA那么就是JTA），而JDBC的一切行为包括事务是基于一个connection的，那么hibernate委托给JDBC的事务也就是基于一个session。JTA与JDBC事务不同在于可以跨连接。
+spring也是调用hibernate中事务管理的API。hibernate的事务管理，一般是编程性的。而委托给spring之后，可以使用声明式的，也就是可以在XML之中配置哪些需要进行事务管理，哪些不需要
+4．用hibernate的session时要注意几点
+1.在更新数据时,要用open()
+2.使用完之后,要close(),这样连接池会回收该连接。
+5．说说在hibernate中使用Integer做映射和使用int做映射之间有什么差别
+使用int做映射，hibernate会自动把int类型转换为Integer类型，以便统一以对象方式处理数据。使用Integer就无须转换。
+在从数据库中取数据的时候，如果是用Integer做的映射，则要求PO对象中对应的类型也必须为Integer类型，使用的时候需要转换为int。如果是int型，则无须转换。
+6．一个网站应用，请设计一个持久化类User，他可能有多张会员卡号、需要多个email地址（数量不定）作为其身份验证的方式
+设计三个类。User类、会员卡类和email类。User类与会员卡类和email类之间是一对多的关系
+7．请简单评价该设计的优劣：身份证号码作为一个person表的主键
+一个表的主键值设计最好不要采用具有业务含义的字段。理由有二：
+1．具有业务含义的字段的长度不固定
+2．具有业务含义的字段的取值范围不定。可能是纯数字，也可能是纯字符，或者是数字和字符的混合情况。
+上述两个方面一但发生变动将不利于业务层的处理。
+8．Hibernate如何获取指定主键id的某对象，请举例，并进行可能的优劣比较
+三种方式：get()，load()和find()
+Get()和load()是先在缓存中查找对象，如果找不到再去数据库中查询；
+Find()是无论何时都在数据库中查询对象。
+三者比较起来Get()和load()的性能稍好一点。
+二．问答题
+1．请说出Hibernate中的映射关系有几种，分别是什么，如何配置
+Hibernate中的映射关系有一对一、一对多、多对多三种。
+一对一关系比较简单，只需在主控方（由谁想得到谁，前者即是主控方）定义。配置如下：
+简单模式：
+<one-to-one name=”” class=”” cascade=”” outer-join=”” constrained=”” />
+完整模式：
+<one-to-one name=”” class=”” cascade=”” outer-join=”” constrained=”” property-ref=”” access=”” />
+解释：
+属性	描述	类型	必须
+name	与PO中对应的和主控方有一对一关联的属性名称，必须一致	TEXT	N
+class	与PO中对应的和主控方有一对一关联的属性类型，要求必须写出完整全类路径	TEXT	N
+cascade	针对被控方操作的级联关系，由主控方触发。它指的是当主控方执行操作时，被控方是否执行同一操作。
+可选值：
+All：所有情况下均触发级联操作
+None：与All相反
+Save-update：在执行save-update时进行级联操作
+Delete：在执行delete时进行级联操作	TEXT	N
+outer-join	是否使用外连接：
+True：总是使用外连接
+False：与true相反
+Auto（默认）：如果被动方没有采用代理机制，则使用外连接	BOOL	N
+constrained	约束。它表示主控方表的主键上是否存在被控方的外键对其进行约束。它决定了save、delete等方法的级联操作顺序	TEXT	N
+property-ref	被控类中用于和主控类相关联的属性名称。默认为关联类的主键属性名称。一般我们通过主键建立一对一的关联，所以采用默认值即可。如果一对一的关联并非建立在主键之间，则可通过此参数指定关联属性	TEXT	N
+access	属性值的读取方式：
+Field：通过java反射机制来访问实体的属性
+Property（默认）：通过getter()和setter()方法访问实体的属性
+ClassName：指定实现net.sf.hibernate.property.PropertyAccessor接口的全路径类名，通过该类中指定的方式访问实体属性	TEXT	N
+一对多关系分为单向一对多关系和双向一对多关系。
+单向一对多关系只需在“一”方进行配置，双向一对多需要在关联双方均加以配置。配置如下：
+单向一对多：
+<set name=”” table=”” lazy=”” inverse=”false” cascade=”” sort=”” order-by=”” >
+	<key column=”” />
+	<one-to-many class=”” />
+</set>
+双向一对多：
+一的一方：
+<set name=”” table=”” lazy=”” inverse=”true” cascade=”” sort=”” order-by=”” >
+	<key column=”” />
+	<one-to-many class=”” />
+</set>
+多的一方：
+<many-to-one name=”” class=”” cascade=”” outer-join=”” update=”” insert=”” access=”” column=”” not-null=”” />
+被动方的记录由Hibernate负责读取，之后存放在主控方指定的Collection类型属性中。
+解释：
+属性	描述	类型	必须
+name	与PO中对应的和主控方有一对多关联的集合属性名称，必须一致	TEXT	Y
+column	关联字段名	TEXT	Y
+class	一的一方的全路径类名	TEXT	N
+cascade	针对被控方操作的级联关系，由主控方触发。它指的是当主控方执行操作时，被控方是否执行同一操作。
+可选值：
+All：所有情况下均触发级联操作
+None：与All相反
+Save-update：在执行save-update时进行级联操作
+Delete：在执行delete时进行级联操作	TEXT	N
+update	是否对关联字段进行update操作。默认为true	BOOL	N
+insert	是否对关联字段进行insert操作。默认为true	BOOL	N
+Outer-join	是否使用外连接：
+True：总是使用外连接
+False：与true相反
+Auto（默认）：如果被动方没有采用代理机制，则使用外连接	TEXT	N
+Property-ref	被控类中用于和主控类相关联的属性名称。默认为关联类的主键属性名称。一般我们通过主键建立一对一的关联，所以采用默认值即可。如果一对一的关联并非建立在主键之间，则可通过此参数指定关联属性	TEXT	N
+access	属性值的读取方式：
+Field：通过java反射机制来访问实体的属性
+Property（默认）：通过getter()和setter()方法访问实体的属性
+ClassName：指定实现net.sf.hibernate.property.PropertyAccessor接口的全路径类名，通过该类中指定的方式访问实体属性	TEXT	N
+多对多关联：由于多对多关联的性能不佳，在设计中应避免大量使用。应根据情况，采取延迟加载机制来避免无谓的性能开销。配置如下：
+<set name=”” table=”” lazy=”” inverse=”” cascade=”” sort=””>
+	<key column=”” />
+	<many-to-many class=”” column=”” outer-join=””/>
+</set>
+解释：
+属性	描述	类型	必须
+column	中间表映射中，关联方在中间表的关联字段	TEXT	Y
+class	关联放的类全路径名称	TEXT	Y
+Outer-join	是否使用外连接：
+True：总是使用外连接
+False：与true相反
+Auto（默认）：如果被动方没有采用代理机制，则使用外连接	TEXT	N
+2．	请描述对象建模时的继承关系在Hibernate中有几种映射方式，如何映射
+一共有三种：
+每颗类继承树使用一张表，配置如下：
+<class name=" " table=" ">
+      <discriminator column="subtype" type="string" />
+      <subclass name="" discriminator-value=" ">
+            <property name="">
+	       <column name="" sql-type="" />
+	</property>
+      </subclass>
+ </class>
+三个类对应的字段都在一个数据表里表示。subtype字段标识存储的是哪个子类，与xml文件中的
+<discriminator column="subtype" type="string" />对应。
+每个子类各一张表，配置如下：
+<class name=" " table=" ">
+      <joined-subclass name=" " table=" ">
+            <key column=" "/>
+            <property name=" ">
+	      <column name=" " sql-type=" "/>
+            </property>
+      </joined-subclass>
+</class>
+每个具体类各一张表，配置如下：
+<class name=" " table=“">  
+        <id name=" " type=" " unsaved-value=" " >
+        </id>
+        <property name=" ">
+	   <column name=" " sql-type=" "/>
+        </property>
+</class>
+3．	请描述Hibernate中的缓存机制
+缓存是介于应用程序和物理数据源之间，其作用是为了降低应用程序对物理数据源访问的频次，从而提高了应用的运行性能。缓存内的数据是对物理数据源中的数据的复制，应用程序在运行时从缓存读写数据，在特定的时刻或事件会同步缓存和物理数据源的数据。 
+缓存的介质一般是内存，所以读写速度很快。但如果缓存中存放的数据量非常大时，也会用硬盘作为缓存介质。缓存的实现不仅仅要考虑存储的介质，还要考虑到管理缓存的并发访问和缓存数据的生命周期。
+Hibernate的缓存包括Session的缓存和SessionFactory的缓存，其中SessionFactory的缓存又可以分为两类：内置缓存和外置缓存。Session的缓存是内置的，不能被卸载，也被称为Hibernate的第一级缓存。Session的缓存是指Session的一些集合属性包含的数据。SessionFactory的内置缓存中存放了映射元数据和预定义SQL语句，映射元数据是映射文件中数据的拷贝，而预定义SQL语句是在Hibernate初始化阶段根据映射元数据推导出来，SessionFactory的内置缓存是只读的，应用程序不能修改缓存中的映射元数据和预定义SQL语句，因此SessionFactory不需要进行内置缓存与映射文件的同步。SessionFactory的外置缓存是一个可配置的插件。在默认情况下，SessionFactory不会启用这个插件。外置缓存的数据是数据库数据的拷贝，外置缓存的介质可以是内存或者硬盘。SessionFactory的外置缓存也被称为Hibernate的第二级缓存。
+Hibernate的这两级缓存都位于持久化层，存放的都是数据库数据的拷贝，那么它们之间的区别是什么呢？为了理解二者的区别，需要深入理解持久化层的缓存的两个特性：缓存的范围和缓存的并发访问策略。
+持久化层的缓存的范围
+缓存的范围决定了缓存的生命周期以及可以被谁访问。缓存的范围分为三类。
+1 事务范围：缓存只能被当前事务访问。缓存的生命周期依赖于事务的生命周期，当事务结束时，缓存也就结束生命周期。在此范围下，缓存的介质是内存。事务可以是数据库事务或者应用事务，每个事务都有独自的缓存，缓存内的数据通常采用相互关联的的对象形式。
+2 进程范围：缓存被进程内的所有事务共享。这些事务有可能是并发访问缓存，因此必须对缓存采取必要的事务隔离机制。缓存的生命周期依赖于进程的生命周期，进程结束时，缓存也就结束了生命周期。进程范围的缓存可能会存放大量的数据，所以存放的介质可以是内存或硬盘。缓存内的数据既可以是相互关联的对象形式也可以是对象的松散数据形式。松散的对象数据形式有点类似于对象的序列化数据，但是对象分解为松散的算法比对象序列化的算法要求更快。
+3 集群范围：在集群环境中，缓存被一个机器或者多个机器的进程共享。缓存中的数据被复制到集群环境中的每个进程节点，进程间通过远程通信来保证缓存中的数据的一致性，缓存中的数据通常采用对象的松散数据形式。
+对大多数应用来说，应该慎重地考虑是否需要使用集群范围的缓存，因为访问的速度不一定会比直接访问数据库数据的速度快多少。
+持久化层可以提供多种范围的缓存。如果在事务范围的缓存中没有查到相应的数据，还可以到进程范围或集群范围的缓存内查询，如果还是没有查到，那么只有到数据库中查询。事务范围的缓存是持久化层的第一级缓存，通常它是必需的；进程范围或集群范围的缓存是持久化层的第二级缓存，通常是可选的。
+持久化层的缓存的并发访问策略
+当多个并发的事务同时访问持久化层的缓存的相同数据时，会引起并发问题，必须采用必要的事务隔离措施。
+在进程范围或集群范围的缓存，即第二级缓存，会出现并发问题。因此可以设定以下四种类型的并发访问策略，每一种策略对应一种事务隔离级别。
+事务型：仅仅在受管理环境中适用。它提供了Repeatable Read事务隔离级别。对于经常被读但很少修改的数据，可以采用这种隔离类型，因为它可以防止脏读和不可重复读这类的并发问题。
+读写型：提供了Read Committed事务隔离级别。仅仅在非集群的环境中适用。对于经常被读但很少修改的数据，可以采用这种隔离类型，因为它可以防止脏读这类的并发问题。
+非严格读写型：不保证缓存与数据库中数据的一致性。如果存在两个事务同时访问缓存中相同数据的可能，必须为该数据配置一个很短的数据过期时间，从而尽量避免脏读。对于极少被修改，并且允许偶尔脏读的数据，可以采用这种并发访问策略。
+只读型：对于从来不会修改的数据，如参考数据，可以使用这种并发访问策略。
+事务型并发访问策略是事务隔离级别最高，只读型的隔离级别最低。事务隔离级别越高，并发性能就越低。
+什么样的数据适合存放到第二级缓存中？
+1、很少被修改的数据 
+2、不是很重要的数据，允许出现偶尔并发的数据
+3、不会被并发访问的数据
+4、参考数据
+不适合存放到第二级缓存的数据？
+1、经常被修改的数据
+2、财务数据，绝对不允许出现并发
+3、与其他应用共享的数据。
+Hibernate的二级缓存
+如前所述，Hibernate提供了两级缓存，第一级是Session的缓存。由于Session对象的生命周期通常对应一个数据库事务或者一个应用事务，因此它的缓存是事务范围的缓存。第一级缓存是必需的，不允许而且事实上也无法卸除。在第一级缓存中，持久化类的每个实例都具有唯一的OID。
+第二级缓存是一个可插拔的的缓存插件，它是由SessionFactory负责管理。由于SessionFactory对象的生命周期和应用程序的整个过程对应，因此第二级缓存是进程范围或者集群范围的缓存。这个缓存中存放的对象的松散数据。第二级对象有可能出现并发问题，因此需要采用适当的并发访问策略，该策略为被缓存的数据提供了事务隔离级别。缓存适配器用于把具体的缓存实现软件与Hibernate集成。第二级缓存是可选的，可以在每个类或每个集合的粒度上配置第二级缓存。
+Hibernate的二级缓存策略的一般过程如下：
+1) 条件查询的时候，总是发出一条select * from table_name where …. （选择所有字段）这样的SQL语句查询数据库，一次获得所有的数据对象。 
+2) 把获得的所有数据对象根据ID放入到第二级缓存中。 
+3) 当Hibernate根据ID访问数据对象的时候，首先从Session一级缓存中查；查不到，如果配置了二级缓存，那么从二级缓存中查；查不到，再查询数据库，把结果按照ID放入到缓存。 
+4) 删除、更新、增加数据的时候，同时更新缓存。
+Hibernate的二级缓存策略，是针对于ID查询的缓存策略，对于条件查询则毫无作用。为此，Hibernate提供了针对条件查询的Query缓存。
+Hibernate的Query缓存策略的过程如下： 
+1) Hibernate首先根据这些信息组成一个Query Key，Query Key包括条件查询的请求一般信息：SQL, SQL需要的参数，记录范围（起始位置rowStart，最大记录个数maxRows)，等。 
+2) Hibernate根据这个Query Key到Query缓存中查找对应的结果列表。如果存在，那么返回这个结果列表；如果不存在，查询数据库，获取结果列表，把整个结果列表根据Query Key放入到Query缓存中。 
+3) Query Key中的SQL涉及到一些表名，如果这些表的任何数据发生修改、删除、增加等操作，这些相关的Query Key都要从缓存中清空。
+三．程序分析
+1．一个WEB程序，首先，页面注册一个用户比如用户名 aa 密码 aa。注册完以后,查看数据库,数据插入到了数据库中,
+然后重开个页面,登录,输入用户名 aa 密码 aa,无法登录,说是找不到。其调用的方法是 getUserByNameAndPassword(用户名,密码)。此时服务器不关,直接执行JUnit的测试文件,调用该方法,能找到这个用户的注册信息, ,然后服务器重启,此时再输入用户名 aa 密码 aa,便能登录了,请问下,在不看代码的情况下,可能是什么地方出了问题?插入及访问代码是基于Hibernate 编写的,要求写出可能的情况及解决方案
+第一种方案：应该是hibernate缓存的问题.在注册完以后只是把数据保存在了缓存里面,而没有提交到数据库.当你用Junit测试的时候当然可以测成功,因为hibernate是先查看缓存的.如果缓存里面有它想要的东西就不查数据库了,直接拿过来用.如果没有才查的.至于说关闭服务器以后,重起就可以登陆了.那应该是在关闭服务器的同时,hibernate   commit了缓存里面的数据.
+
+第二种方案：getUserByNameAndPassword(用户名,密码)方法得不到用户很可能是hibernate的缓存机制没有控制好，导致该方法读取用户验证时并不是从数据库读取，而是从hibernate的session中读取，session由于还是原先没插值前的缓存，所以得不到用户。有2中解决方法：1.在getUserByNameAndPassword(用户名,密码)方法中加上HibernateSessionFactory.getSession().clear();2.在session.save()方法里面（也就是insert）在插入了注册的用户信息，事务提交后，调用session.close()方法将session关闭。
+    
+第三种方案：在hibernate进行save操作的时候，它会将save的这条数据同时缓存进session和sessionFactory（如果有配二级缓存的话）。当下次来查询的时候，Hibernate会先从查询sessionFactory，如果没有查到，继续查询session，如果还是没有查询到，就查询数据库。但现在的现象好像是，hibernate查询了session没有查到之后，就没有继续进行查询了，而是就返回结果了。find操作和save操作应该是不会共享session的，因为session是非线程安全的。可能是在二级缓存的时候出了问题，在二级缓存中好像有一个类似“黑名单”的东西，里面保存了没有记录的查询语句，当hibernate发行这条查询语句在这个“黑名单”中的时候，它就不会继续查询数据库了，而是直接返回没有找到数据。
+
+第四种方案：其实这个应该是缓存问题的一种错误使用方式造成的。他应该是在getUserByNameAndPassword里用的get()或者load()这种方法去获取的数据。这2种方法都是从缓存里去读取数据。只有find()是直接从数据库拿数据。而他的数据库的连接方式可能是注册时开启了一个连接，之后并未马上关闭，之后登陆时用的同一个连接，所以是不会从数据库拿数据的。重起服务器之后，是因为连接里的数据更新了，所以是可以得到数据的。解决方式可以有好几种了。将获得数据改成每次都从数据库拿的方式，或者是上面说的将session里的流清空掉，还可以再开起一个连接。你可以根据需要来决定。至于配置，可以不需要做高级的属性设置的。补充一下，Junit测试是因为它每次连接都是新的。
+
+第五种方案：它应该是启用了hibernate二级缓存，而且还使用了查询缓存，在它的createQuery("from   User   u   where   u.userName=?   and   password=?   ")语句后面恐怕还有setCacheable(true)这样的语句，并且在你创建该用户前肯定用该用户和密码登录过，此时肯定登录不了，查询返回的结果是null，但是已经把该查询和结果缓存到二级查询缓存中去了，当你创建该用户后，不重起登录，该查询取的是查询缓存中的结果，即null，所以登录不了。而在JUnit测试中，肯定有开关，不使用二级查询缓存，即不执行setCacheable(true)，这样就直接查数据库，就能查到了。
+2．指出一下代码哪里错误使用了Hibernate。背景简介：Board是一个实体类，id是它的主键，name和description是他的两个属性。BoardDao是Board实体的数据访问对象，BoardBo是业务对象，用户提交变更Board对象的请求，由Struts的BoardAction接收，调用BoardBo处理。HibernateUtil.currentSession()用于返回当前请求的Session对象。 
+代码
+1.	    //数据访问层代码：BoardDao.java   
+2.	    public Board loadBoard(Long id) {   
+3.	        Session session = HibernateUtil.currentSession();    
+4.	        return session.load(Board.class, id);   
+5.	    }   
+6.	    public void updateBoard(Board board) {   
+7.	        Session session = HibernateUtil.currentSession();    
+8.	        session.update(board);   
+9.	    }   
+10.	  
+11.	    //业务对象层代码：BoardBo.java    
+12.	    private BoardDao boardDao;   
+13.	    public void updateBoard(Long id, String name, String description) {   
+14.	        Board board = boardDao.loadBoard(id);   
+15.	        board.setName(name);   
+16.	        board.setDescription(description);   
+17.	        boardDao.updateBoard(board);   
+18.	    }   
+19.	  
+20.	    //Web控制器代码：BoardAction.java   
+21.	    private BoardBo BoardBo;   
+22.	    public ActionForward execute(   
+23.	ActionMapping mapping,    
+24.	ActionForm form,   
+25.	HttpServletRequest request,    
+26.	HttpServletResponse response) throws Exception {   
+27.	        String id = request.getParameter("id");   
+28.	        String name = request.getParameter("name");   
+29.	        String description = request.getParameter("description");   
+30.	        boardBo.updateBoard(id, name, description);   
+31.	        return mapping.findForward("update-success");   
+32.	    }   
+1．第30行boardBo.updateBoard(id, name, description)没有对id进行类型转换。接收时为String，调用updateBoard时需要的是Long型。
+2．持久层的操作没有关闭session的代码，并且在update之后没有commit();
+四．判断题
+1．使用save方法persist一个对象时，便立即向数据库发送执行insert sql语句？
+不会。先保存在session缓存中。待commit()之后才向数据库发送insert sql语句
+========================================================================
+5.Hibernate有哪几种查询数据的方式 
+hql查询，sql查询，条件查询
+
+6.load()和get()的区别 
+hibernate对于load方法认为该数据在数据库中一定存在，可以放心的使用代理来延迟加载，load默认支持延迟加载，在用到对象中的其他属性数 据时才查询数据库，但是万一数据库中不存在该记录，只能抛异常ObjectNotFoundEcception；所说的load方法抛异常是指在使用该对 象的数据时，数据库中不存在该数据时抛异常，而不是在创建这个对象时。由于session中的缓存对于hibernate来说是个相当廉价的资源，所以在 load时会先查一下session缓存看看该id对应的对象是否存在，不存在则创建代理（load时候之查询一级缓存，不存在则创建代理）。get() 现在一级缓存找，没有就去二级缓存找，没有就去数据库找，没有就返回null ；而对于get方法，hibernate一定要获取到真实的数据，否则返回null。
+
+7.谈谈hibernate的延迟加载和openSessionInView 
+延迟加载要在session范围内，用到的时候再加载；opensessioninview是在web层写了一个
+filter来打开和关闭session，这样就表示在一次request过程中session一直开着，保证了延迟
+加载在session中的这个前提。
+
+8.spring的事务有几种方式？谈谈spring事务的隔离级别和传播行为。 
+声明事务和编程事务 
+隔离级别： 
+- DEFAULT使用数据库默认的隔离级别 
+- READ_UNCOMMITTED会出现脏读，不可重复读和幻影读问题 
+- READ_COMMITTED会出现重复读和幻影读 
+- REPEATABLE_READ会出现幻影读 
+- SERIALIZABLE最安全，但是代价最大，性能影响极其严重 
+和传播行： 
+- REQUIRED存在事务就融入该事务，不存在就创建事务 
+- SUPPORTS存在事务就融入事务，不存在则不创建事务 
+- MANDATORY存在事务则融入该事务，不存在，抛异常 
+- REQUIRES_NEW总是创建新事务 
+- NOT_SUPPORTED存在事务则挂起，一直执行非事务操作 
+- NEVER总是执行非事务，如果当前存在事务则抛异常 
+- NESTED嵌入式事务
+
+9.Hibernate中的update()和saveOrUpdate()的区别. 
+摘自hibernate说明文档： 
+saveOrUpdate()做下面的事: 
+如果对象已经在本session中持久化了，不做任何事 
+如果另一个与本session关联的对象拥有相同的持久化标识(identifier)，抛出一个异常 
+如果对象没有持久化标识(identifier)属性，对其调用save() 
+如果对象的持久标识(identifier)表明其是一个新实例化的对象，对其调用save() 
+如果对象是附带版本信息的（通过 <version>或 <timestamp>） 并且版本属性的值表明其是一个新实例化的对象，save()它。 否则update() 这个对象
+10.Spring对多种ORM框架提供了很好的支持，简单描述在Spring中使用Hibernate的方法，并结合事务管理。 
+getHiberanteTemplate里面提供了save，update，delete，find等方法。 
+简单说一个：如果配置了声明式事务，当执行getHibernateTemplate的各种方法的时候，事务会
+自动被加载 
+如果没有配置事务，那么以上操作不会真正的被同步到数据库，除非配置了hibernate的
+autocommit=true
+8.spring的事务有几种方式？谈谈spring事务的隔离级别和传播行为。 
+spring事务分两种形式，声明式事务和编程式事务，spring提供了一个事务的接口
+PaltformTractionManager接口，针对不同的事务，spring进行了不同的实现,对hibernate事务
+的实现HIbernateTractionManager,对JDBC的JdbcTractionManager，
+DataSourceTractionManager以及JdoTractionManager。接口platformTractionManager提供了三
+个方法，获取事务，提交和回滚的方法。
+******************************************************************************
+分享面试题二】Spring,hibernate,struts的面试笔试题（含答案） 
+（声明：这里不是为其他商业利益，是为学习讨论使用）
+【郑重声明】：单纯接分将被删帖，希望大家有自己的感触 
+Hibernate工作原理及为什么要用？ 
+原理： 
+1.读取并解析配置文件 
+2.读取并解析映射信息，创建SessionFactory 
+3.打开Sesssion 
+4.创建事务Transation 
+5.持久化操作 
+6.提交事务 
+7.关闭Session 
+8.关闭SesstionFactory
+为什么要用： 
+1.    对JDBC访问数据库的代码做了封装，大大简化了数据访问层繁琐的重复性代码。
+2.    Hibernate是一个基于JDBC的主流持久化框架，是一个优秀的ORM实现。他很大程度的简化DAO层的编码工作
+3.    hibernate使用Java反射机制，而不是字节码增强程序来实现透明性。
+4.    hibernate的性能非常好，因为它是个轻量级框架。映射的灵活性很出色。它支持各种关系数据库，从一对一到多对多的各种复杂关系。
+2． Hibernate是如何延迟加载? 
+1. Hibernate2延迟加载实现：a)实体对象 b)集合（Collection）
+2. Hibernate3 提供了属性的延迟加载功能
+当Hibernate在查询数据的时候，数据并没有存在与内存中，当程序真正对数据的操作时，对象才存在与内存中，就实现了延迟加载，他节省了服务器的内存开销，从而提高了服务器的性能。
+3．Hibernate中怎样实现类之间的关系?(如：一对多、多对多的关系)
+类与类之间的关系主要体现在表与表之间的关系进行操作，它们都市对对象进行操作，我们程序中把所有的表与类都映射在一起，它们通过配置文件中的many-to-one、one-to-many、many-to-many、
+4． 说下Hibernate的缓存机制
+1. 内部缓存存在Hibernate中又叫一级缓存，属于应用事物级缓存
+2. 二级缓存： 
+a) 应用及缓存 
+b) 分布式缓存 
+条件：数据不会被第三方修改、数据大小在可接受范围、数据更新频率低、同一数据被系统频繁使用、非关键数据 
+c) 第三方缓存的实现
+5． Hibernate的查询方式 
+Sql、Criteria,object comptosition 
+Hql： 
+1、 属性查询 
+2、 参数查询、命名参数查询 
+3、 关联查询 
+4、 分页查询 
+5、 统计函数
+6． 如何优化Hibernate？ 
+1.使用双向一对多关联，不使用单向一对多 
+2.灵活使用单向一对多关联 
+3.不用一对一，用多对一取代 
+4.配置对象缓存，不使用集合缓存 
+5.一对多集合使用Bag,多对多集合使用Set 
+6. 继承类使用显式多态 
+7. 表字段要少，表关联不要怕多，有二级缓存撑腰
+================================================================================
+1.Hibernate有哪几种查询数据的方式 
+         (1)导航对象图查询 
+      (2)OID查询 
+      (3)HQL 
+      (4)QBC 
+      (5)本地SQL 
+
+2.load()和get()的区别 
+
+
+load加载方法： 
+
+Java代码 
+
+Users user = (Users)session.load(Users.class, userId);     
+Users user = (Users)session.load(Users.class, userId); 
+
+get加载方法： 
+
+Java代码 
+
+Users user = (Users)session.get(Users.class, userId);   
+Users user = (Users)session.get(Users.class, userId); 
+
+
+
+两加载方法区别： 
+
+区别1：如果数据库中，没有userId的对象。如果通过get方法加载，则返回的是一个null；如果通过load加载，则返回一个代理对象，如果后面代码如果调用user对象的某个属性（比如user.getPassword()）会抛出异常：org.hibernate.ObjectNotFoundException； 
+
+区别2：load支持延迟加载，get不支持延迟加载。 
+
+也就是说： 
+
+Java代码 
+
+Users user = (Users)session.load(Users.class, userId);   
+Users user = (Users)session.load(Users.class, userId); 
+
+这句代码不会去执行数据库查询，只有用到user时才会去执行数据库查询。 
+
+而： 
+
+Java代码 
+
+Users user = (Users)session.get(Users.class, userId);   
+Users user = (Users)session.get(Users.class, userId); 
+
+则立即去执行数据库查询。 所以Users user = (Users)session.load(Users.class, userId);不会执行任何sql。 
+
+注意： 
+
+Java代码 
+
+Users user = (Users)session.load(Users.class, userId);    
+System.out.println(user.getId());   
+Users user = (Users)session.load(Users.class, userId); 
+
+System.out.println(user.getId()); 
+
+上面这2句代码，不会去执行数据库操作。因为load后会在hibernate的一级缓存里存放一个map对象，该map的key就是userId的值，但是当你getId()时，它会去一级缓存里拿map的key值，而不去执行数据库查询。所以不会报任何错。不会执行任何数据库操作。 
+
+
+
+3.   Hibernate工作原理及为什么要用？ 
+
+原理： 
+
+1.         读取并解析配置文件 
+
+2.         读取并解析映射信息，创建SessionFactory 
+
+3.         打开Sesssion 
+
+4.         创建事务Transation 
+
+5.         持久化操作 
+
+6.         提交事务 
+
+7.         关闭Session 
+
+8.         关闭SesstionFactory 
+
+
+
+为什么要用： 
+
+
+
+1. 对JDBC访问数据库的代码做了封装，大大简化了数据访问层繁琐的重复性代码。 
+
+2. Hibernate是一个基于JDBC的主流持久化框架，是一个优秀的ORM实现。他很大程度的简化DAO层的编码工作 
+
+3. hibernate使用Java反射机制，而不是字节码增强程序来实现透明性。 
+
+4. hibernate的性能非常好，因为它是个轻量级框架。映射的灵活性很出色。它支持各种关系数据库，从一对一到多对多的各种复杂关系。 
+
+
+
+4．   Hibernate是如何延迟加载? 
+
+1.         Hibernate2延迟加载实现：a)实体对象  b)集合（Collection） 
+
+2.         Hibernate3 提供了属性的延迟加载功能 
+
+当Hibernate在查询数据的时候，数据并没有存在与内存中，当程序真正对数据的操作时，对象才存在与内存中，就实现了延迟加载，他节省了服务器的内存开销，从而提高了服务器的性能。 
+
+5．   Hibernate中怎样实现类之间的关系?(如：一对多、多对多的关系) 
+
+类与类之间的关系主要体现在表与表之间的关系进行操作，它们都市对对象进行操作，我们程序中把所有的表与类都映射在一起，它们通过配置文件中的many-to-one、one-to-many、many-to-many、 
+
+
+
+5．   说下Hibernate的缓存机制 
+
+1.         内部缓存存在Hibernate中又叫一级缓存，属于应用事物级缓存 
+
+2.         二级缓存： 
+
+a)         应用及缓存 
+
+b)        分布式缓存 
+
+条件：数据不会被第三方修改、数据大小在可接受范围、数据更新频率低、同一数据被系统频繁使用、非         关键数据 
+
+c)  第三方缓存的实现 
+
+
+
+6．   Hibernate的查询方式 
+
+Sql、Criteria,object comptosition 
+
+Hql： 
+
+1、  属性查询 
+
+2、  参数查询、命名参数查询 
+
+3、  关联查询 
+
+4、  分页查询 
+
+5、  统计函数 
+
+
+
+7．   如何优化Hibernate？ 
+
+1.         使用双向一对多关联，不使用单向一对多 
+
+2.         灵活使用单向一对多关联 
+
+3.         不用一对一，用多对一取代 
+
+4.         配置对象缓存，不使用集合缓存 
+
+5.         一对多集合使用Bag,多对多集合使用Set 
+
+6.         继承类使用显式多态 
+
+7.         表字段要少，表关联不要怕多，有二级缓存撑腰 
+
+=====================Hibernate笔试题============================================ 
+
+
+(1)一般情况下，关系数据模型与对象模型之间有哪些匹配关系（多选） 
+A)表对应类 
+B)记录对应对象 
+C)表的字段对应类的属性 
+D)表之间的参考关系对应类之间的依赖关系 
+
+(2)以下关于SessionFactory的说法哪些正确？（多选） 
+A)对于每个数据库事务，应该创建一个SessionFactory对象 
+B)一个SessionFactory对象对应一个数据库存储源。 
+C)SessionFactory是重量级的对象，不应该随意创建。如果系统中只有一个数据库存储源，只需要创建一个。 
+D)SessionFactory的load()方法用于加载持久化对象 
+
+
+(3)Customer类中有一个Set类型的orders属性，用来存放Order订单对象，在Customer.hbm.xml文件中，用哪个元素映射orders属性？ 
+A)<set> B)<one-to-many> C)<many-to-one> D)<property> 
+
+(4)<set>元素有一个cascade属性，如果希望Hibernate级联保存集合中的对象，casecade属性应该取什么值？（单选） 
+A)none 
+B)save 
+C)delete 
+D)save-update 
+
+
+(5)以下哪些属于Session的方法？ 
+A)load() 
+B)save() 
+C)delete() 
+D)update() 
+E)open() 
+F)close() 
+
+(6)以下程序的打印结果是什么？（单选） 
+
+tx = session.beginTransaction(); 
+Customer c1=(Customer)session.load(Customer.class,new Long(1)); 
+Customer c2=(Customer)session.load(Customer.class,new Long(1)); 
+System.out.println(c1==c2); 
+tx.commit(); 
+session.close(); 
+
+A)运行出错，抛出异常 
+B)打印false 
+C)打印true 
+
+
+(7)以下程序代码对Customer的name属性修改了两次： 
+tx = session.beginTransaction(); 
+Customer customer=(Customer)session.load(Customer.class, 
+                              new Long(1)); 
+customer.setName(\"Jack\"); 
+customer.setName(\"Mike\"); 
+tx.commit(); 
+
+执行以上程序，Hibernate需要向数据库提交几条update语句？（单选） 
+A)0 B)1 C)2 D)3 
+
+
+(8)在持久化层，对象分为哪些状态？（多选） 
+A)临时状态 
+B)独立状态 
+C)游离状态 
+D)持久化状态 
+
+
+(9)对于以下程序，Customer对象在第几行变为持久化状态？（单选） 
+Customer customer=new Customer(); //line1 
+customer.setName(\"Tom\"); //line2 
+Session session1=sessionFactory.openSession(); //line3 
+Transaction tx1 = session1.beginTransaction(); //line4 
+session1.save(customer); //line4 
+tx1.commit(); //line5 
+session1.close(); //line6 
+
+A) line1 B)line2 C)line3 D)line4 E)line5 F)line6 
+
+
+(10)对于以下程序，Customer对象在第几行变为游离状态？（单选） 
+Customer customer=new Customer(); //line1 
+customer.setName(\"Tom\"); //line2 
+Session session1=sessionFactory.openSession(); //line3 
+Transaction tx1 = session1.beginTransaction(); //line4 
+session1.save(customer); //line4 
+tx1.commit(); //line5 
+session1.close(); //line6 
+
+A) line1 B)line2 C)line3 D)line4 E)line5 F)line6 
+
+(11)以下哪一种检索策略利用了外连结查询？（单选） 
+A)立即检索 B)延迟检索 C)迫切左外连结检索 
+
+(12)假设对Customer类的orders集合采用延迟检索策略，编译或运行以下程序，会出现什么情况（单选） 
+Session session=sessionFactory.openSession(); 
+tx = session.beginTransaction(); 
+Customer customer=(Customer)session.get(Customer.class,new Long(1)); 
+tx.commit(); 
+session.close(); 
+Iterator orderIterator=customer.getOrders().iterator(); 
+
+A)编译出错 B)编译通过，并正常运行 C)编译通过，但运行时抛出异常 
+
+(13)关于HQL与SQL，以下哪些说法正确？（多选） 
+A)HQL与SQL没什么差别 
+B)HQL面向对象，而SQL操纵关系数据库 
+C)在HQL与SQL中，都包含select,insert,update,delete语句 
+D)HQL仅用于查询数据，不支持insert,update和delete语句 
+
+(14)事务隔离级别是由谁实现的？（单选） 
+A)Java应用程序 B)Hibernate C)数据库系统 D)JDBC驱动程序 
+
+(15)悲观锁与乐观锁，哪个具有较好的并发性能？（单选） 
+A)悲观锁 B)乐观锁 
+
+答案： 
+(1)A,B,C (2)B,C (3)A (4)D (5)A,B,C,D,F (6)C (7)B (8)A,C,D (9)D   (10)F (11)C (12)C (13)B,D (14)C (15)B 
+============================================================================
+
+
+
